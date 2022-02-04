@@ -8,7 +8,7 @@ import staticImgs from '../helper/images_path';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Spinner from 'react-native-loading-spinner-overlay';
 import Geolocation from '@react-native-community/geolocation'
-// import Geocoder from 'react-native-geocoding';
+
 import {
   View,
   SafeAreaView,
@@ -43,23 +43,24 @@ const HomeScreen = ({ navigation }) => {
   const [favIconColor, setFavIconColor] = useState(false);
   const [loc, setloc] = useState([0, 0]);
   const [city, setcity] = useState("");
-
-
-
   const [dataPlants, setDataPlants] = useState([]);
   const [storageFlowers, setStorageFlowers] = useState([]);
+  const [locationFlowers, setLocationFlowers] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [flag, setFlag] = useState(0);
   const [spinnerState, setSpinnerState] = useState(false);
+  const [locationSpinner, setLocationSpinner] = useState(false);
+  const [locationFlowersFlag, setLocationFlowersFlag] = useState(false);
 
 
-  const categories = ['ALL FLOWERS', 'FAVORITES', <Icon name='location-pin' size={24} />];
+  const categories = ['ALL FLOWERS', 'FAVORITES', <Icon name='location-pin' size={24} onPress={ async () => await getLocationBasedFlowers() } />];
 
 
   const [toggle, settoggle] = useState(0);
 
   useEffect(() => {
     getLoc();
+    // console.log("Iam key>>>>>>>>>:", process.env.LOCATION_KEY);
   }, []);
 
 
@@ -78,6 +79,13 @@ const HomeScreen = ({ navigation }) => {
   useEffect(() => {
     console.log(searchText)
   }, [searchText])
+
+  useEffect(() => {
+    if ( locationFlowers.length > 0 ) {
+      console.log('YES I AM GRETTT');
+      setLocationFlowersFlag(true);
+    }
+  }, [locationFlowers])
 
   const storeData = async (value) => {
     try {
@@ -163,7 +171,11 @@ const HomeScreen = ({ navigation }) => {
     }
     getFlowers();
 
-    return async () => { setDataPlants([]); }
+    return () => { 
+      setDataPlants([]);
+      setStorageFlowers([]);
+      setLocationFlowers([]);
+    }
   }, [])
 
   const changeFlowerArray = async (plantObj) => {
@@ -175,6 +187,36 @@ const HomeScreen = ({ navigation }) => {
     }
   }
 
+  const getLocationBasedFlowers = async () => {
+    setLocationSpinner(!locationSpinner);
+    setCategoryIndex(2);
+    if ( city !== '' ) {
+    await fetch(`${ip}/location_flowers`, {
+        method: "POST",
+        headers: {
+          'Content-Type': 'application/json; charset=utf-8',
+          'Accept': 'application/json'
+        },
+  
+        body: JSON.stringify({
+          // city
+          city: "Lahore",
+        })
+  
+      })
+      .then(res => res.json())
+      .then(res => {
+        let flowersTemp = [];
+        res['flowers'].forEach(flower => {
+          let filteredFlowers = dataPlants.filter(item => item.flower_name.toLowerCase() === flower.toLowerCase());
+          if ( filteredFlowers.length === 1 ) flowersTemp.push(filteredFlowers[0]);
+        })
+        if ( flowersTemp.length > 0 ) { setLocationFlowers(flowersTemp); setLocationSpinner(false) }
+        else console.log("No location flowers were found");
+      });
+    }
+  }
+
   const CategoryList = () => {
     return (
       <View style={style.categoryContainer}>
@@ -182,7 +224,7 @@ const HomeScreen = ({ navigation }) => {
           <TouchableOpacity
             key={index}
             activeOpacity={0.8}
-            onPress={() => setCategoryIndex(index)}>
+            onPress={() => { setCategoryIndex(index); setLocationFlowersFlag(false); setLocationFlowers([]); setLocationSpinner(false); }}>
             <Text
               style={[
                 style.categoryText,
@@ -503,7 +545,6 @@ const HomeScreen = ({ navigation }) => {
     switch (index) {
       case 0:
         return (
-
           <FlatList
             columnWrapperStyle={{ justifyContent: 'space-between' }}
             showsVerticalScrollIndicator={false}
@@ -536,53 +577,8 @@ const HomeScreen = ({ navigation }) => {
             }}
           />
         )
-      case 2:
-        return (
-          <View>
-
-            <Text>{city}</Text>
-
-          </View>
-        )
-
-
     }
   }
-
-
-  //   (
-  //     <FlatList
-  //       columnWrapperStyle={{ justifyContent: 'space-between' }}
-  //       showsVerticalScrollIndicator={false}
-  //       contentContainerStyle={{
-  //         marginTop: 10,
-  //         paddingBottom: 50,
-  //       }}
-  //       numColumns={2}
-  //       // data={dataPlants}
-  //       data={dataPlants.filter(plantItem => plantItem.like).filter(plant => plant.flower_name.toLowerCase().includes(searchText.toLowerCase()))}
-  //       renderItem={({ item }) => {
-  //         return <Card plant={item} />;
-  //       }}
-  //     />
-  //   )
-  //   :
-  // (
-  //   <FlatList
-  //     columnWrapperStyle={{ justifyContent: 'space-between' }}
-  //     showsVerticalScrollIndicator={false}
-  //     contentContainerStyle={{
-  //       marginTop: 10,
-  //       paddingBottom: 50,
-  //     }}
-  //     numColumns={2}
-  //     data={dataPlants.filter(plant => plant.flower_name.toLowerCase().includes(searchText.toLowerCase()))}
-  //     // data={dataPlants}
-  //     renderItem={({ item }) => {
-  //       return <Card plant={item} />;
-  //     }}
-  //   />
-  // )
 
 
   return (
@@ -613,50 +609,50 @@ const HomeScreen = ({ navigation }) => {
         }}
       >
 
-        {
-
-          modl()
-
-        }
-
+        { modl() }
 
       </Modal>
-
-
-
-
-      {/* <Image 
-        source={imageUri}
-
-        style = {{
-        borderColor: 'black',
-        height:30,
-        width:30,
-        borderWidth:2,
-        }}/> */}
 
       <View style={{ marginTop: 30, flexDirection: 'row' }}>
         <View style={style.searchContainer}>
           <Icon name="search" size={25} style={{ marginLeft: 20 }} />
           <TextInput placeholder="Search" value={searchText} onChangeText={(e) => { setsearchText(e) }} style={style.input} />
         </View>
-        {/* <View style={style.sortBtn}> */}
-        {/* <Icon name="sort" size={30} color={COLORS.white} /> */}
-        {/* </View> */}
       </View>
       <CategoryList />
       {
-        dataPlants.length > 0 ?
+        dataPlants.length > 0 && catergoryIndex === 0 || 1 ?
           switchScreens(catergoryIndex) :
           null
-
-
       }
+      { locationFlowersFlag ? (
+        <FlatList
+          columnWrapperStyle={{ justifyContent: 'space-between' }}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{
+            marginTop: 10,
+            paddingBottom: 50,
+          }}
+          numColumns={2}
+          data={locationFlowers.filter(plant => plant.flower_name.toLowerCase().includes(searchText.toLowerCase()))}
+          // data={locationFlowers}
+          renderItem={({ item }) => {
+            return <Card plant={item} />;
+          }}
+        />
+      ) : (<></>) }
       {spinnerState && (
         <Spinner
           visible={spinnerState}
           textContent={'Loading...'}
           textStyle={style.spinnerTextStyle}
+        />
+      )}
+      {locationSpinner && (
+        <Spinner
+          visible={locationSpinner}
+          textContent={'Getting your flowers...'}
+          textStyle={style.locationSpinnerTextStyle}
         />
       )}
     </SafeAreaView>
@@ -717,6 +713,9 @@ const style = StyleSheet.create({
   },
   spinnerTextStyle: {
     color: '#FFF'
+  },
+  locationSpinnerTextStyle: {
+    color: '#FF0000'
   },
 });
 
