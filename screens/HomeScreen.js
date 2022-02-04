@@ -199,7 +199,7 @@ const HomeScreen = ({ navigation }) => {
         },
   
         body: JSON.stringify({
-          city
+          city,
           // city: "Lahore",
         })
   
