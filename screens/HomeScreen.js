@@ -127,7 +127,7 @@ const HomeScreen = ({ navigation }) => {
         .then(res => res.json())
         .then(res => {
           // console.log(res.address)
-          setcity(res.address.state)
+          setcity(res.address.city)
         })
     }
   }, [loc]);
