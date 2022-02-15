@@ -31,7 +31,7 @@ const width = Dimensions.get('window').width / 2 - 30;
 LogBox.ignoreLogs(['new NativeEventEmitter']);
 
 const RNFS = require("react-native-fs");
-const ip = "http://40.86.119.115:8080"
+const ip = "http://40.78.149.33:8080"
 
 
 const HomeScreen = ({ navigation }) => {
@@ -139,7 +139,7 @@ const HomeScreen = ({ navigation }) => {
     setSpinnerState(!spinnerState);
     // AsyncStorage.removeItem('@flowers')
     const getFlowers = async () => {
-      await fetch("http://40.86.119.115:8080/all_flowers")
+      await fetch(`${ip}/all_flowers`)
         .then(res => res.json())
         .then(async res => {
           let temp = res['flowers'];
